@@ -94,8 +94,8 @@
     const colorPicker = document.getElementById('colorPicker');
 
     //Define BLE Device Specs
-    var deviceName ='ESP32-web-ble';
-    var bleService = '19b10000-e8f2-537e-4f6c-d104768a1214';
+    var deviceName ='ESP32_webBLE';
+    var bleService = 'e3223000-9445-4e96-a4a1-85358c4046a2';  // '19b10000-e8f2-537e-4f6c-d104768a1214';
     var ledCharacteristic = '19b10002-e8f2-537e-4f6c-d104768a1214';
     var sensorCharacteristic = '19b10001-e8f2-537e-4f6c-d104768a1214';
     var sliderCharacteristic = '19b10003-e8f2-537e-4f6c-d104768a1214'; // Existing slider UUID
@@ -105,7 +105,65 @@
     var sliderCharacteristic3 = 'your-uuid-for-slider-3';
     var sliderCharacteristic4 = 'your-uuid-for-slider-4';
     var colorPickerCharacteristic = 'your-uuid-for-color-picker';
-
+    
+    //All UUID for EMDR_BLE_v1_2_61.ino
+    var SERVICE_UUID = 'e3223000-9445-4e96-a4a1-85358c4046a2'; //same as var bleService
+    //var SERVICE_2_UUID = 'e3223200-9445-4e96-a4a1-85358c4046a2';
+    
+    var CHAR1_UUID = 'e3223001-9445-4e96-a4a1-85358c4046a2';
+    var CHAR2_UUID = 'e3223002-9445-4e96-a4a1-85358c4046a2';
+    var CHAR3_UUID = 'e3223003-9445-4e96-a4a1-85358c4046a2';
+    
+    var CHAR_FG_COLOUR_VOX_UUID = 'e3223004-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_BG_COLOUR_VOY_UUID = 'e3223005-246e-459b-ae10-5dbea099f9f0';
+    
+    var CHAR_PIXEL_SPEED_V00_UUID = 'e3223006-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_ON_OFF_V01_UUID = 'e3223007-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_BRIGHT_BG_V04_UUID = 'e3223008-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_BRIGHT_FG_V07_UUID = 'e3223009-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TARAIL_BRIGHT_DELTA_V08_UUID = 'e3223010-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_PIXEL_WIDTH_V09_UUID = 'e3223011-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_PIXEL_START_V10_UUID = 'e3223012-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_SLOW_TIME_V11_UUID = 'e3223013-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_STRING_EMDR_LIGHT_FLAG_V12_UUID = 'e3223014-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_FLOWING_V13_UUID = 'e3223015-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_RND_FOREGROUND_COLOUR_ON_OFF_V14_UUID = 'e3223016-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_RND_FOREGROUND_COLOUR_TIME_V15_UUID = 'e3223017-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_RND_BACKGROUND_COLOUR_ON_OFF_V16_UUID = 'e3223018-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_RND_BACKGROUND_COLOUR_TIME_V17_UUID = 'e3223019-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_RND_STRIP_WIDTH_ON_OFF_V20_UUID = 'e3223020-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_RND_STRIP_WIDTH_TIME_V21_UUID = 'e3223021-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_NUM_LEDS_V23_UUID = 'e3223022-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_FLAG_CLEAR_MAX_STRIP_V24_UUID = 'e3223023-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_SET_TIMER_SPINNER_V25_UUID = 'e3223024-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_START_STOP_FLAG_V26_UUID = 'e3223025-246e-459b-ae10-5dbea099f9f0';
+    
+    var CHAR_TAPPER_ON_OFF_FLAG_VT01_UUID = 'e3223026-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_BUZZ_FLAG_VT02_UUID = 'e3223027-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_BUZZ_INTENSITY_VT12_UUID = 'e3223028-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_BUZZ_OTHER_VT22_UUID = 'e3223029-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_LIGHT_FLAG_VT03_UUID = 'e3223030-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_LIGHT_INTENSITY_V13_UUID = 'e3223031-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_LIGHT_OTHER_VT23_UUID = 'e3223032-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_SOUND_FLAG_VT04_UUID = 'e3223033-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_SOUND_INTENSITY_VT14_UUID = 'e3223034-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_SOUND_OTHER_VT24_UUID = 'e3223035-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_PRESSURE_FLAG_VT05_UUID = 'e3223036-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_Tapper_PRESSURE_INTENSITY_VT15_UUID = 'e3223037-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_TAPPER_PRESSURE_OTHER_VT25_UUID = 'e3223038-246e-459b-ae10-5dbea099f9f0';
+    
+    var CHAR_STING_LIGHT_FUNCTION_VL01_UUID = 'e3223039-246e-459b-ae10-5dbea099f9f0';
+    
+    var CHAR_SEND_TO_PHONE = 'e3223040-246e-459b-ae10-5dbea099f9f0';
+    
+    var CHAR_SPARE1_UUID = 'e3223041-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_SPARE2_UUID = 'e3223042-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_SPARE3_UUID = 'e3223043-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_SPARE4_UUID = 'e3223044-246e-459b-ae10-5dbea099f9f0';
+    var CHAR_SPARE5_UUID = 'e3223045-246e-459b-ae10-5dbea099f9f0';
+    var Char_vbat1_perCharge_UUID = 'e3223046-246e-459b-ae10-5dbea099f9f0';
+    var Char_vbat2_perCharge_UUID = 'e3223047-246e-459b-ae10-5dbea099f9f0';
+    
     //Global Variables to Handle Bluetooth
     var bleServer;
     var bleServiceFound;
@@ -206,9 +264,6 @@
 
         connectToDevice();
     }
-
- 
-
  
     function handleCharacteristicChange(event){
         const newValueReceived = new TextDecoder().decode(event.target.value);
