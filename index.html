@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Web BLE App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="favicon.ico">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="UTF-8">
+</head>
+<body>
+    <div class="topnav">
+        <h1>ESP32 Web BLE Application</h1>
+    </div>
+    <div class="content">
+        <div class="card-grid">
+            <div class="card">
+                <p>
+                    <button id="connectBleButton" class="connectButton"> Connect to BLE Device</button>
+                    <button id="disconnectBleButton" class="disconnectButton"> Disconnect BLE Device</button>
+                </p>
+                <p class="gray-label">BLE state: <strong><span id="bleState" style="color:#d13a30;">Disconnected</span></strong></p>
+            </div>
+        </div>
+        <div class="card-grid">   
+            <div class="card">
+                <h2>Fetched Value</h2>
+                <p class="reading"><span id="valueContainer">NaN</span></p>
+                <p class="gray-label">Last reading: <span id="timestamp"></span></p>
+            </div>
+
+            <div class="card">
+                <h2>Control GPIO 2</h2>
+                <label for="gpioSlider">GPIO 2 Value:</label>
+                <input type="range" id="gpioSlider" min="0" max="255" step="1" value="0">
+                <span id="sliderValueDisplay">0</span>
+                <button id="onButton" class="onButton">ON</button>
+                <button id="offButton" class="offButton">OFF</button>
+                <p class="gray-label">Last value sent: <span id="valueSent"></span></p>
+            </div>
+        </div>
+
+        <!-- Additional sliders -->
+        <div class="card-grid">
+            <div class="card">
+                <h2>Control Additional GPIOs</h2>
+                <div>
+                    <label for="gpioSlider2">GPIO Slider 2:</label>
+                    <input type="range" id="gpioSlider2" min="0" max="255" step="1" value="0">
+                    <span id="sliderValueDisplay2">0</span>
+                </div>
+                <div>
+                    <label for="gpioSlider3">GPIO Slider 3:</label>
+                    <input type="range" id="gpioSlider3" min="0" max="255" step="1" value="0">
+                    <span id="sliderValueDisplay3">0</span>
+                </div>
+                <div>
+                    <label for="gpioSlider4">GPIO Slider 4:</label>
+                    <input type="range" id="gpioSlider4" min="0" max="255" step="1" value="0">
+                    <span id="sliderValueDisplay4">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Color picker -->
+        <div class="card-grid">
+            <div class="card">
+                <h2>Color Picker</h2>
+                <input type="color" id="colorPicker">
+            </div>
+        </div>
+    </div>
+    <div class="footer">
+        <p><a href="https://psychmatters.co.nz/">EMDR Tech by Stefan Nagler</a></p>
+        <p><a href="https://psychmatters.co.nz/">Visit here</a></p>
+    </div>
+</body>
+<script>
+    // DOM Elements
+    const connectButton = document.getElementById('connectBleButton');
+    const disconnectButton = document.getElementById('disconnectBleButton');
+    const onButton = document.getElementById('onButton');
+    const offButton = document.getElementById('offButton');
+    const gpioSlider = document.getElementById('gpioSlider');
+    const sliderValueDisplay = document.getElementById('sliderValueDisplay');
+    const retrievedValue = document.getElementById('valueContainer');
+    const latestValueSent = document.getElementById('valueSent');
+    const bleStateContainer = document.getElementById('bleState');
+    const timestampContainer = document.getElementById('timestamp');
+
+    // Additional slider and color picker DOM elements
+    const gpioSlider2 = document.getElementById('gpioSlider2');
+    const gpioSlider3 = document.getElementById('gpioSlider3');
+    const gpioSlider4 = document.getElementById('gpioSlider4');
+    const colorPicker = document.getElementById('colorPicker');
+
+    //Define BLE Device Specs
+    var deviceName ='ESP32-web-ble';
+    var bleService = '19b10000-e8f2-537e-4f6c-d104768a1214';
+    var ledCharacteristic = '19b10002-e8f2-537e-4f6c-d104768a1214';
+    var sensorCharacteristic = '19b10001-e8f2-537e-4f6c-d104768a1214';
+    var sliderCharacteristic = '19b10003-e8f2-537e-4f6c-d104768a1214'; // Existing slider UUID
+
+    // New UUIDs for additional sliders and color picker
+    var sliderCharacteristic2 = 'your-uuid-for-slider-2';
+    var sliderCharacteristic3 = 'your-uuid-for-slider-3';
+    var sliderCharacteristic4 = 'your-uuid-for-slider-4';
+    var colorPickerCharacteristic = 'your-uuid-for-color-picker';
+
+    //Global Variables to Handle Bluetooth
+    var bleServer;
+    var bleServiceFound;
+    var sensorCharacteristicFound;
+    var sliderCharacteristicFound;
+
+    // Connect Button (search for BLE Devices only if BLE is available)
+    connectButton.addEventListener('click', (event) => {
+        if (isWebBluetoothEnabled()){
+            connectToDevice();
+        }
+    });
+
+    // Disconnect Button
+    disconnectButton.addEventListener('click', disconnectDevice);
+
+    // Write to the ESP32 LED Characteristic
+    onButton.addEventListener('click', () => writeOnCharacteristic(1));
+    offButton.addEventListener('click', () => writeOnCharacteristic(0));
+
+    // Slider Input Event Listener
+    gpioSlider.addEventListener('input', () => {
+        const sliderValue = parseInt(gpioSlider.value, 10); // Parse as integer
+        console.log('Slider Value:', sliderValue);
+        sliderValueDisplay.textContent = sliderValue; // Update the display with the current slider value
+        writeSliderValueCharacteristic(sliderValue, sliderCharacteristic);
+    });
+
+    // Event listeners for new sliders
+    gpioSlider2.addEventListener('input', () => writeSliderValueCharacteristic(gpioSlider2.value, sliderCharacteristic2));
+    gpioSlider3.addEventListener('input', () => writeSliderValueCharacteristic(gpioSlider3.value, sliderCharacteristic3));
+    gpioSlider4.addEventListener('input', () => writeSliderValueCharacteristic(gpioSlider4.value, sliderCharacteristic4));
+
+    // Event listener for color picker
+    colorPicker.addEventListener('input', () => {
+        const colorValue = colorPicker.value;
+        writeColorValueCharacteristic(colorValue);
+    });
+
+    // Check if BLE is available in your Browser
+    function isWebBluetoothEnabled() {
+        if (!navigator.bluetooth) {
+            console.log('Web Bluetooth API is not available in this browser!');
+            bleStateContainer.innerHTML = "Web Bluetooth API is not available in this browser/device!";
+            return false;
+        }
+        console.log('Web Bluetooth API supported in this browser.');
+        return true;
+    }
+
+    // Connect to BLE Device and Enable Notifications
+    function connectToDevice(){
+        console.log('Initializing Bluetooth...');
+        navigator.bluetooth.requestDevice({
+            filters: [{name: deviceName}],
+            optionalServices: [bleService]
+        })
+        .then(device => {
+            console.log('Device Selected:', device.name);
+            bleStateContainer.innerHTML = 'Connected to device ' + device.name;
+            bleStateContainer.style.color = "#24af37";
+            device.addEventListener('gattservicedisconnected', onDisconnected);
+            return device.gatt.connect();
+        })
+        .then(gattServer =>{
+            bleServer = gattServer;
+            console.log("Connected to GATT Server");
+            return bleServer.getPrimaryService(bleService);
+        })
+        .then(service => {
+            bleServiceFound = service;
+            console.log("Service discovered:", service.uuid);
+            return service.getCharacteristic(sensorCharacteristic);
+        })
+        .then(characteristic => {
+            console.log("Characteristic discovered:", characteristic.uuid);
+            sensorCharacteristicFound = characteristic;
+            characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicChange);
+            characteristic.startNotifications();
+            console.log("Notifications Started.");
+            return characteristic.readValue();
+        })
+        .then(value => {
+            console.log("Read value: ", value);
+            const decodedValue = new TextDecoder().decode(value);
+            console.log("Decoded value: ", decodedValue);
+            retrievedValue.innerHTML = decodedValue;            
+        })
+        .catch(error => {
+            console.log('Error: ', error);
+        })
+    }
+
+    function onDisconnected(event){
+        console.log('Device Disconnected:', event.target.device.name);
+        bleStateContainer.innerHTML = "Device disconnected";
+        bleStateContainer.style.color = "#d13a30";
+
+        connectToDevice();
+    }
+
+ 
+
+ 
+    function handleCharacteristicChange(event){
+        const newValueReceived = new TextDecoder().decode(event.target.value);
+        console.log("Characteristic value changed: ", newValueReceived);
+        retrievedValue.innerHTML = newValueReceived;
+        timestampContainer.innerHTML = getDateTime();
+    }
+
+    function writeOnCharacteristic(value){
+        if (bleServer && bleServer.connected) {
+            bleServiceFound.getCharacteristic(ledCharacteristic)
+            .then(characteristic => {
+                console.log("Found the LED characteristic: ", characteristic.uuid);
+                const data = new Uint8Array([value]);
+                return characteristic.writeValue(data);
+            })
+            .then(() => {
+                latestValueSent.innerHTML = value;
+                console.log("Value written to LEDcharacteristic:", value);
+            })
+            .catch(error => {
+                console.error("Error writing to the LED characteristic: ", error);
+            });
+        } else {
+            console.error ("Bluetooth is not connected. Cannot write to characteristic.")
+            window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!")
+        }
+    }
+
+    function disconnectDevice() {
+        console.log("Disconnect Device.");
+        if (bleServer && bleServer.connected) {
+            if (sensorCharacteristicFound) {
+                sensorCharacteristicFound.stopNotifications()
+                    .then(() => {
+                        console.log("Notifications Stopped");
+                        return bleServer.disconnect();
+                    })
+                    .then(() => {
+                        console.log("Device Disconnected");
+                        bleStateContainer.innerHTML = "Device Disconnected";
+                        bleStateContainer.style.color = "#d13a30";
+
+                    })
+                    .catch(error => {
+                        console.log("An error occurred:", error);
+                    });
+            } else {
+                console.log("No characteristic found to disconnect.");
+            }
+        } else {
+            console.error("Bluetooth is not connected.");
+            window.alert("Bluetooth is not connected.")
+        }
+    }
+
+    function getDateTime() {
+        var currentdate = new Date();
+        var day = ("00" + currentdate.getDate()).slice(-2);
+        var month = ("00" + (currentdate.getMonth() + 1)).slice(-2);
+        var year = currentdate.getFullYear();
+        var hours = ("00" + currentdate.getHours()).slice(-2);
+        var minutes = ("00" + currentdate.getMinutes()).slice(-2);
+        var seconds = ("00" + currentdate.getSeconds()).slice(-2);
+        
+        var datetime = day + "/" + month + "/" + year + " at " + hours + ":" + minutes + ":" + seconds;
+        return datetime;
+    }
+
+
+    function writeSliderValueCharacteristic(value){
+        if (bleServer && bleServer.connected) {
+            bleServiceFound.getCharacteristic(sliderCharacteristic)
+            .then(characteristic => {
+                console.log("Found the Slider characteristic: ", characteristic.uuid);
+                const data = new Uint8Array([value]);
+                return characteristic.writeValue(data);
+            })
+            .then(() => {
+                latestValueSent.innerHTML = value;
+                console.log("Value written to Slider characteristic:", value);
+            })
+            .catch(error => {
+                console.error("Error writing to the Slider characteristic: ", error);
+            });
+        } else {
+            console.error ("Bluetooth is not connected. Cannot write to characteristic.")
+            window.alert("Bluetooth is not connected. Cannot write to characteristic. \n Connect to BLE first!")
+        }
+    }
+</script>
+</html>
